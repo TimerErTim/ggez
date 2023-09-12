@@ -113,10 +113,14 @@ impl GraphicsContext {
             })
         };
 
+        let mut base_limits = wgpu::Limits::default();
         if conf.backend == Backend::All {
+            base_limits = wgpu::Limits::downlevel_webgl2_defaults();
+
             match Self::new_from_instance(
                 game_id,
                 new_instance(wgpu::Backends::PRIMARY),
+                base_limits.clone(),
                 event_loop,
                 conf,
                 filesystem,
@@ -133,6 +137,7 @@ impl GraphicsContext {
                     Self::new_from_instance(
                         game_id,
                         new_instance(wgpu::Backends::SECONDARY),
+                        base_limits,
                         event_loop,
                         conf,
                         filesystem,
@@ -141,6 +146,12 @@ impl GraphicsContext {
                 Err(e) => Err(e),
             }
         } else {
+            match conf.backend {
+                Backend::Gl => base_limits = wgpu::Limits::downlevel_webgl2_defaults(),
+                Backend::Dx11 => base_limits = wgpu::Limits::downlevel_defaults(),
+                _ => {}
+            }
+
             let instance = new_instance(match conf.backend {
                 Backend::All => unreachable!(),
                 Backend::OnlyPrimary => wgpu::Backends::PRIMARY,
@@ -152,7 +163,7 @@ impl GraphicsContext {
                 Backend::BrowserWebGpu => wgpu::Backends::BROWSER_WEBGPU,
             });
 
-            Self::new_from_instance(game_id, instance, event_loop, conf, filesystem)
+            Self::new_from_instance(game_id, instance, base_limits, event_loop, conf, filesystem)
         }
     }
 
@@ -231,6 +242,7 @@ impl GraphicsContext {
     pub(crate) fn new_from_instance(
         #[allow(unused_variables)] game_id: &str,
         instance: wgpu::Instance,
+        base_limits: wgpu::Limits,
         event_loop: &winit::event_loop::EventLoop<()>,
         conf: &Conf,
         filesystem: &Filesystem,
@@ -303,7 +315,7 @@ impl GraphicsContext {
                     max_storage_buffer_binding_size: INSTANCE_BUFFER_SIZE,
                     max_texture_dimension_1d: 8192,
                     max_texture_dimension_2d: 8192,
-                    ..wgpu::Limits::downlevel_webgl2_defaults()
+                    ..base_limits
                 },
             },
             None,
