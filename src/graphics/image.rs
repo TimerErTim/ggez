@@ -23,6 +23,8 @@ pub type ImageFormat = wgpu::TextureFormat;
 /// Describes the format of an encoded image.
 pub type ImageEncodingFormat = ::image::ImageFormat;
 
+pub type ImageUsages = wgpu::TextureUsages;
+
 /// Handle to an image stored in GPU memory.
 #[derive(Debug, Clone)]
 pub struct Image {
@@ -156,6 +158,18 @@ impl Image {
             width,
             height,
         ))
+    }
+
+    /// Creates an empty Texture with the given properties stored in GPU memory. The Texture is not associated with any data.
+    pub fn empty(
+        gfx: &impl Has<GraphicsContext>,
+        width: u32,
+        height: u32,
+        samples: u32,
+        format: ImageFormat,
+        usage: ImageUsages,
+    ) -> Self {
+        Self::new(&gfx.retrieve().wgpu, format, width, height, samples, usage)
     }
 
     fn new(
